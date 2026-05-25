@@ -1,2 +1,4 @@
+#ifndef IPCTK_HAS_CATCH2_WITH_MAIN
 #define CATCH_CONFIG_MAIN
-#include <catch2/catch_test_macros.hpp>
+#endif
+#include <catch2/catch_all.hpp>
