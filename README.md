@@ -128,3 +128,11 @@ It's a rather clumsy issue. The root directory is mirrored in `Polyflow/IPCtk`. 
 About the mirroring, there's little I can do about it, until I make my own package manager.
 
 Please visit my [SAT solver](https://github.com/Chubek/Satie) if you are interested in solving this problem yourself. I did not use a SAT solver, I used common sense.
+
+## Bindings
+
+We use SWIG 4.0 to generate bindings for the languages it supports. However, you may notice `XFeats.yaml`. This is my dataset of "language-specific capabilities". Through `GenerateBindings.sh`, you can enable them. Keep in mind that some of them collide. Use common sense. The easiest way to generate bindings is:
+
+```sh
+$ bash bindings/GenerateBindings.sh Python
+```
