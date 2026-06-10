@@ -113,4 +113,18 @@ auto pubsub = ipctk::syn::parse("pubsub.ipcl");
 pubsub.compile<"dest/Python.itkd">("pubsub.py");
 ```
 
+## The ITKD Language
 
+Using the ITKD language, you can define new backends for IPC-L targets. By default, several backends have been provided in `dest` directory. These are C, Python and Ruby.
+
+In the `examples` directory, several imaginary backends have been defiend to demonstrate the usage of ITKD. Inside the `docs` directory, you can find the manual for both IPC-L and ITKD.
+
+## Circular Dependency
+
+IPCtk depends on Polyflow, and Polyflow depends on IPCtk. How does that work?
+
+It's a rather clumsy issue. The root directory is mirrored in `Polyflow/IPCtk`. But any simple SAT solver would tell you, since the IPCtk API is decoupled from Polyflow API, this creates a situation where IPCtk and Polyflow live togethe r in a 'co-independent' state. They are exposed to each other through each other's APIs, and their APIs are entirely decoupled.
+
+About the mirroring, there's little I can do about it, until I make my own package manager.
+
+Please visit my [SAT solver](https://github.com/Chubek/Satie) if you are interested in solving this problem yourself. I did not use a SAT solver, I used common sense.
