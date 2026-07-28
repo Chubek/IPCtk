@@ -11,12 +11,12 @@ option(IPCTK_ENABLE_BINDINGS "Enable SWIG bindings generation targets" ON)
 
 add_library(ipctk INTERFACE)
 target_include_directories(ipctk INTERFACE
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 target_compile_features(ipctk INTERFACE cxx_std_20)
 
-install(FILES IPCtk.hpp DSLUtils.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES include/IPCtk.hpp DSLUtils.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(TARGETS ipctk EXPORT IPCtkTargets)
 
 if(IPCTK_BUILD_EXAMPLES)

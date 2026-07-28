@@ -1,5 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
-#include "../../IPCtk.hpp"
+#include "../../include/IPCtk.hpp"
 
 TEST_CASE("ipctk_result_smoke_10") {
   using R = dsl::Result<int, std::string>;
