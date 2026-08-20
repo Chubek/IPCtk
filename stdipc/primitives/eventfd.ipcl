@@ -1,0 +1,15 @@
+ // stdipc: eventfd Primitive
+ // File-descriptor based event notification.
+ // Platform: Linux only
+ 
+ signal event_fd = eventfd(0, 0);
+ 
+ pipe eventfd_notify_path =
+     write(event_fd, 1)
+     -> wake(consumer)
+     -> close(event_fd);
+ 
+ pipe eventfd_wait_path =
+     read(event_fd, count)
+     -> consume(count)
+     -> close(event_fd);

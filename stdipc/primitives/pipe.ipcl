@@ -1,0 +1,16 @@
+ // stdipc: Pipe Primitive
+ // Unidirectional byte stream between parent and child processes.
+ // Platform: All POSIX
+ 
+ pipe read_end  = pipe.rd();
+ pipe write_end = pipe.wr();
+ 
+ pipe pipe_read_path =
+     read(read_end)
+     -> buffer(bytes)
+     -> deliver(consumer);
+ 
+ pipe pipe_write_path =
+     accept(producer)
+     -> buffer(bytes)
+     -> write(write_end);

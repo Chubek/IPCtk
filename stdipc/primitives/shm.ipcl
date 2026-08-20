@@ -1,0 +1,20 @@
+ // stdipc: Shared Memory Primitive
+ // Shared memory region with optional mutual exclusion.
+ // Platform: All POSIX
+ 
+ shared shm_region = shm.open("/ipctk.shm", 4_KiB);
+ mutex  shm_lock   = semaphore("/ipctk.shm.lock", 1);
+ 
+ pipe shm_read_path =
+     lock(shm_lock)
+     -> map(shm_region, read)
+     -> copy(bytes)
+     -> unmap(shm_region)
+     -> unlock(shm_lock);
+ 
+ pipe shm_write_path =
+     lock(shm_lock)
+     -> map(shm_region, write)
+     -> write(bytes)
+     -> unmap(shm_region)
+     -> unlock(shm_lock);

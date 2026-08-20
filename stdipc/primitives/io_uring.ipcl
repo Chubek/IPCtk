@@ -1,0 +1,16 @@
+ // stdipc: io_uring Primitive
+ // Async I/O submission and completion ring.
+ // Platform: Linux only
+ 
+ ring io_ring = io_uring.setup(256);
+ 
+ pipe uring_submit_path =
+     prepare(io_ring, op)
+     -> submit(io_ring)
+     -> enter(kernel);
+ 
+ pipe uring_complete_path =
+     wait(io_ring)
+     -> peek(io_ring, cqe)
+     -> complete(io_ring, cqe)
+     -> advance(io_ring);

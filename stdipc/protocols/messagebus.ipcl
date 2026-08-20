@@ -1,0 +1,36 @@
+ // stdipc: Message Bus Protocol
+ // A many-to-many routed messaging backbone with content-based routing.
+ // Requires backend capability: pubsub
+ 
+ socket bus_socket       = tcp.listen("127.0.0.1:11000");
+ 
+ shared channel_table    = shm.open("/channels", 256_KiB);
+ shared subscription_idx = shm.open("/sub_idx", 128_KiB);
+ mutex  bus_lock         = semaphore("/bus.lock", 1);
+ queue  message_buffer   = mpmc.ring(8192);
+ signal message_ready    = eventfd();
+ 
+ pipe produce_path =
+     recv(bus_socket)
+     -> decode(message)
+     -> lock(bus_lock)
+     -> route(channel_table)
+     -> enqueue(message_buffer)
+     -> notify(message_ready)
+     -> unlock(bus_lock);
+ 
+ pipe consume_path =
+     recv(bus_socket)
+     -> decode(subscription)
+     -> lock(bus_lock)
+     -> update(subscription_idx)
+     -> unlock(bus_lock);
+ 
+ pipe route_path =
+     wait(message_ready)
+     -> dequeue(message_buffer)
+     -> lock(bus_lock)
+     -> filter(subscription_idx)
+     -> match_channels(channel_table)
+     -> unlock(bus_lock)
+     -> fanout(send(bus_socket));

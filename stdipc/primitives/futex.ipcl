@@ -1,0 +1,15 @@
+ // stdipc: Futex Primitive
+ // Fast userspace mutex for low-contention locking.
+ // Platform: Linux only
+ 
+ mutex futex_word = futex(0);
+ 
+ pipe futex_lock_path =
+     cmp_xchg(futex_word, 0, 1)
+     -> futex_wait(futex_word, 1)
+     -> enter(critical_section);
+ 
+ pipe futex_unlock_path =
+     cmp_xchg(futex_word, 1, 0)
+     -> futex_wake(futex_word, 1)
+     -> exit(critical_section);

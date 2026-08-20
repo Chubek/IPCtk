@@ -1,0 +1,33 @@
+ // stdipc: Publish/Subscribe Protocol
+ // A fan-out messaging pattern with topic-based routing.
+ // Requires backend capability: pubsub
+ 
+ socket pub_in        = tcp.listen("127.0.0.1:7000");
+ socket sub_in        = tcp.listen("127.0.0.1:7001");
+ 
+ shared subscription_table = shm.open("/subscriptions", 128_KiB);
+ mutex  subscription_lock  = semaphore("/subscriptions.lock", 1);
+ 
+ queue publication_queue   = mpmc.ring(4096);
+ signal publication_ready  = eventfd();
+ 
+ pipe publish_path =
+     recv(pub_in)
+     -> decode(message)
+     -> enqueue(publication_queue)
+     -> notify(publication_ready);
+ 
+ pipe subscribe_path =
+     recv(sub_in)
+     -> decode(subscription)
+     -> lock(subscription_lock)
+     -> update(subscription_table)
+     -> unlock(subscription_lock);
+ 
+ pipe dispatch_path =
+     wait(publication_ready)
+     -> dequeue(publication_queue)
+     -> lock(subscription_lock)
+     -> match_subscribers(subscription_table)
+     -> unlock(subscription_lock)
+     -> fanout(send(sub_in));

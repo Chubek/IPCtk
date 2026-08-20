@@ -1,0 +1,33 @@
+ // stdipc: Event Bus Protocol
+ // A fire-and-forget notification backbone with priority dispatch.
+ // Requires backend capability: pubsub
+ 
+ socket event_socket   = tcp.listen("127.0.0.1:12000");
+ 
+ shared handler_registry = shm.open("/handlers", 128_KiB);
+ mutex  event_lock       = semaphore("/event.lock", 1);
+ queue  priority_queue   = mpmc.ring(4096);
+ signal event_ready      = eventfd();
+ 
+ pipe emit_path =
+     recv(event_socket)
+     -> decode(event)
+     -> lock(event_lock)
+     -> prioritize(priority_queue)
+     -> notify(event_ready)
+     -> unlock(event_lock);
+ 
+ pipe register_path =
+     recv(event_socket)
+     -> decode(handler)
+     -> lock(event_lock)
+     -> insert(handler_registry)
+     -> unlock(event_lock);
+ 
+ pipe dispatch_path =
+     wait(event_ready)
+     -> dequeue(priority_queue)
+     -> lock(event_lock)
+     -> match_handlers(handler_registry)
+     -> unlock(event_lock)
+     -> fanout(send(event_socket));

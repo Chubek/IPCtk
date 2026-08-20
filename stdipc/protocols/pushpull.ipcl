@@ -1,0 +1,33 @@
+ // stdipc: Push/Pull Protocol
+ // A pipeline/work-distribution pattern with fair-queue dispatching.
+ // Requires backend capability: pushpull
+ 
+ socket push_socket   = tcp.listen("127.0.0.1:10000");
+ socket pull_socket   = tcp.listen("127.0.0.1:10001");
+ 
+ shared work_queue    = shm.open("/work", 256_KiB);
+ mutex  work_lock     = semaphore("/work.lock", 1);
+ signal work_ready    = eventfd();
+ counter round_robin  = counter(0);
+ 
+ pipe push_path =
+     recv(push_socket)
+     -> decode(task)
+     -> lock(work_lock)
+     -> enqueue(work_queue)
+     -> notify(work_ready)
+     -> unlock(work_lock);
+ 
+ pipe pull_path =
+     recv(pull_socket)
+     -> decode(ack)
+     -> send(pull_socket);
+ 
+ pipe distribute_path =
+     wait(work_ready)
+     -> lock(work_lock)
+     -> dequeue(work_queue)
+     -> unlock(work_lock)
+     -> next(round_robin)
+     -> assign_worker(round_robin)
+     -> send(pull_socket);

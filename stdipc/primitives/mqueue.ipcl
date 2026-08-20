@@ -1,0 +1,17 @@
+ // stdipc: POSIX Message Queue Primitive
+ // Message queue with priority support.
+ // Platform: All POSIX
+ 
+ queue msg_queue = mqueue.open("/ipctk.mq", 10);
+ 
+ pipe mq_send_path =
+     open(msg_queue, write)
+     -> encode(message)
+     -> send(priority)
+     -> close(msg_queue);
+ 
+ pipe mq_recv_path =
+     open(msg_queue, read)
+     -> receive(priority)
+     -> decode(message)
+     -> close(msg_queue);

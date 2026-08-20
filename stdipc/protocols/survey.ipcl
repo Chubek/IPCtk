@@ -1,0 +1,32 @@
+ // stdipc: Surveyor/Respondent Protocol
+ // A scatter-gather inquiry pattern with deadline-based collection.
+ // Requires backend capability: survey
+ 
+ socket survey_out    = udp.multicast("239.0.0.1:9000");
+ socket response_in   = tcp.listen("127.0.0.1:9001");
+ 
+ shared respondent_table = shm.open("/respondents", 128_KiB);
+ mutex  respondent_lock  = semaphore("/respondents.lock", 1);
+ timer  survey_deadline  = timer(5000_ms);
+ 
+ pipe survey_path =
+     recv(survey_out)
+     -> decode(question)
+     -> broadcast(udp.multicast("239.0.0.1:9000"))
+     -> start(survey_deadline);
+ 
+ pipe respond_path =
+     recv(response_in)
+     -> decode(answer)
+     -> lock(respondent_lock)
+     -> insert(respondent_table)
+     -> unlock(respondent_lock);
+ 
+ pipe collect_path =
+     expire(survey_deadline)
+     -> lock(respondent_lock)
+     -> aggregate(respondent_table)
+     -> clear(respondent_table)
+     -> unlock(respondent_lock)
+     -> encode(results)
+     -> send(survey_out);

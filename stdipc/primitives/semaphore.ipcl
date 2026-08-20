@@ -1,0 +1,15 @@
+ // stdipc: Semaphore Primitive
+ // Named POSIX semaphore for mutual exclusion and signaling.
+ // Platform: All POSIX
+ 
+ mutex sem = semaphore("/ipctk.sem", 1);
+ 
+ pipe sem_wait_path =
+     wait(sem)
+     -> enter(critical_section)
+     -> post(sem);
+ 
+ pipe sem_signal_path =
+     post(sem)
+     -> notify(waiters)
+     -> exit(critical_section);

@@ -1,0 +1,35 @@
+ // stdipc: Mailbox Protocol
+ // An asynchronous message-drop pattern with per-mailbox blocking support.
+ // Requires backend capability: mailbox
+ 
+ socket mailbox_socket  = tcp.listen("127.0.0.1:14000");
+ 
+ shared mailbox_storage  = shm.open("/mailboxes", 512_KiB);
+ mutex  mailbox_lock     = semaphore("/mailbox.lock", 1);
+ signal arrival_signal   = eventfd();
+ 
+ pipe send_path =
+     recv(mailbox_socket)
+     -> decode(message)
+     -> lock(mailbox_lock)
+     -> deposit(mailbox_storage)
+     -> notify(arrival_signal)
+     -> unlock(mailbox_lock);
+ 
+ pipe receive_path =
+     wait(arrival_signal)
+     -> lock(mailbox_lock)
+     -> retrieve(mailbox_storage)
+     -> remove(mailbox_storage)
+     -> unlock(mailbox_lock)
+     -> decode(payload)
+     -> send(mailbox_socket);
+ 
+ pipe poll_path =
+     recv(mailbox_socket)
+     -> decode(poll_request)
+     -> lock(mailbox_lock)
+     -> peek(mailbox_storage)
+     -> unlock(mailbox_lock)
+     -> encode(count)
+     -> send(mailbox_socket);

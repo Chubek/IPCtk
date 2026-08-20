@@ -1,0 +1,15 @@
+ // stdipc: FIFO Primitive
+ // Named pipe for communication between unrelated processes.
+ // Platform: All POSIX
+ 
+ fifo named_fifo = fifo.open("/tmp/ipctk.fifo");
+ 
+ pipe fifo_read_path =
+     open(named_fifo, read)
+     -> read(bytes)
+     -> deliver(consumer);
+ 
+ pipe fifo_write_path =
+     open(named_fifo, write)
+     -> accept(producer)
+     -> write(bytes);

@@ -1,0 +1,16 @@
+ // stdipc: Signal Primitive
+ // Asynchronous signal delivery between processes.
+ // Platform: All POSIX
+ 
+ signal sig = signal(SIGUSR1);
+ 
+ pipe sig_send_path =
+     target(pid)
+     -> send(sig)
+     -> deliver(target);
+ 
+ pipe sig_recv_path =
+     register(sig, handler)
+     -> wait(sig)
+     -> invoke(handler)
+     -> acknowledge(sig);

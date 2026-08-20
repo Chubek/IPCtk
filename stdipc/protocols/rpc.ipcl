@@ -1,0 +1,42 @@
+ // stdipc: Remote Procedure Call Protocol
+ // A full RPC stack with marshalling, invocation, and return-path routing.
+ // Requires backend capability: reqrep
+ 
+ socket rpc_socket     = tcp.listen("127.0.0.1:13000");
+ 
+ shared schema_registry = shm.open("/schemas", 128_KiB);
+ shared call_table      = shm.open("/calls", 256_KiB);
+ mutex  rpc_lock        = semaphore("/rpc.lock", 1);
+ queue  worker_queue    = mpmc.ring(4096);
+ signal completion_sig  = eventfd();
+ 
+ pipe call_path =
+     recv(rpc_socket)
+     -> decode(call)
+     -> lock(rpc_lock)
+     -> validate(schema_registry)
+     -> insert(call_table)
+     -> enqueue(worker_queue)
+     -> notify(completion_sig)
+     -> unlock(rpc_lock);
+ 
+ pipe invoke_path =
+     wait(completion_sig)
+     -> dequeue(worker_queue)
+     -> lock(rpc_lock)
+     -> lookup(call_table)
+     -> unmarshal(schema_registry)
+     -> invoke(procedure)
+     -> marshal(schema_registry)
+     -> update(call_table)
+     -> unlock(rpc_lock)
+     -> send(rpc_socket);
+ 
+ pipe return_path =
+     recv(rpc_socket)
+     -> decode(result)
+     -> lock(rpc_lock)
+     -> match_caller(call_table)
+     -> remove(call_table)
+     -> unlock(rpc_lock)
+     -> send(rpc_socket);

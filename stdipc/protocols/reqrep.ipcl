@@ -1,0 +1,39 @@
+ // stdipc: Request/Reply Protocol
+ // A synchronous RPC-like pattern with in-flight request tracking.
+ // Requires backend capability: reqrep
+ 
+ socket rep_socket    = tcp.listen("127.0.0.1:8000");
+ socket req_socket    = tcp.connect("127.0.0.1:8000");
+ 
+ shared request_map   = shm.open("/requests", 64_KiB);
+ mutex  request_lock  = semaphore("/requests.lock", 1);
+ signal request_ready = eventfd();
+ 
+ pipe request_path =
+     recv(req_socket)
+     -> encode(request)
+     -> send(rep_socket)
+     -> lock(request_lock)
+     -> insert(request_map)
+     -> notify(request_ready)
+     -> unlock(request_lock);
+ 
+ pipe reply_path =
+     recv(rep_socket)
+     -> decode(reply)
+     -> lock(request_lock)
+     -> lookup(request_map)
+     -> match_caller(request_map)
+     -> remove(request_map)
+     -> unlock(request_lock)
+     -> send(req_socket);
+ 
+ pipe dispatch_path =
+     wait(request_ready)
+     -> lock(request_lock)
+     -> dequeue(request_map)
+     -> unlock(request_lock)
+     -> decode(payload)
+     -> invoke(handler)
+     -> encode(result)
+     -> send(req_socket);

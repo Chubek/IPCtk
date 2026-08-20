@@ -1,0 +1,19 @@
+ // stdipc: Unix Domain Socket Primitive
+ // Unix domain socket with stream and datagram modes.
+ // Platform: All POSIX
+ 
+ socket unix_listener = unix.listen("/tmp/ipctk.sock");
+ socket unix_stream   = unix.connect("/tmp/ipctk.sock");
+ 
+ pipe unix_accept_path =
+     bind(unix_listener)
+     -> listen(backlog)
+     -> accept(connection)
+     -> recv(bytes)
+     -> deliver(consumer);
+ 
+ pipe unix_connect_path =
+     connect(unix_stream)
+     -> accept(producer)
+     -> send(bytes)
+     -> close(unix_stream);

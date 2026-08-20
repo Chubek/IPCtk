@@ -1,0 +1,19 @@
+ // stdipc: UDP Socket Primitive
+ // UDP datagram socket with multicast support.
+ // Platform: All
+ 
+ socket udp_sock = udp.bind("0.0.0.0:16000");
+ 
+ pipe udp_send_path =
+     bind(udp_sock)
+     -> accept(producer)
+     -> encode(datagram)
+     -> sendto(address)
+     -> close(udp_sock);
+ 
+ pipe udp_recv_path =
+     bind(udp_sock)
+     -> recvfrom(address)
+     -> decode(datagram)
+     -> deliver(consumer)
+     -> close(udp_sock);

@@ -1,0 +1,19 @@
+ // stdipc: TCP Socket Primitive
+ // TCP stream socket with listen and connect endpoints.
+ // Platform: All
+ 
+ socket tcp_listener = tcp.listen("127.0.0.1:15000");
+ socket tcp_stream   = tcp.connect("127.0.0.1:15000");
+ 
+ pipe tcp_accept_path =
+     bind(tcp_listener)
+     -> listen(backlog)
+     -> accept(connection)
+     -> recv(bytes)
+     -> deliver(consumer);
+ 
+ pipe tcp_connect_path =
+     connect(tcp_stream)
+     -> accept(producer)
+     -> send(bytes)
+     -> close(tcp_stream);

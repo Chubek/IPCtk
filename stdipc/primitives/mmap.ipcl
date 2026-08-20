@@ -1,0 +1,16 @@
+ // stdipc: Memory-Mapped File Primitive
+ // Memory-mapped file for shared access between processes.
+ // Platform: All POSIX
+ 
+ shared mmap_region = mmap.open("/tmp/ipctk.mmap", 64_KiB);
+ 
+ pipe mmap_read_path =
+     map(mmap_region, read)
+     -> copy(bytes)
+     -> unmap(mmap_region);
+ 
+ pipe mmap_write_path =
+     map(mmap_region, write)
+     -> write(bytes)
+     -> sync(mmap_region)
+     -> unmap(mmap_region);

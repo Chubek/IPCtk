@@ -1,0 +1,34 @@
+ // stdipc: Channel Protocol
+ // A bidirectional typed stream with framed messages and back-pressure.
+ // Requires backend capability: channel
+ 
+ socket channel_socket  = unix.listen("/tmp/ipctk.channel");
+ 
+ signal backpressure    = eventfd();
+ shared buffer_window   = shm.open("/channel.buf", 64_KiB);
+ mutex  channel_lock    = semaphore("/channel.lock", 1);
+ 
+ pipe send_path =
+     recv(channel_socket)
+     -> encode(payload)
+     -> lock(channel_lock)
+     -> frame(buffer_window)
+     -> notify(backpressure)
+     -> unlock(channel_lock)
+     -> send(channel_socket);
+ 
+ pipe recv_path =
+     recv(channel_socket)
+     -> lock(channel_lock)
+     -> deframe(buffer_window)
+     -> unlock(channel_lock)
+     -> decode(payload)
+     -> send(channel_socket);
+ 
+ pipe flow_control_path =
+     wait(backpressure)
+     -> lock(channel_lock)
+     -> drain(buffer_window)
+     -> unlock(channel_lock)
+     -> encode(ack)
+     -> send(channel_socket);
